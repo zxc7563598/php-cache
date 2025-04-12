@@ -47,7 +47,6 @@ class MemoryCache implements DataSourceInterface
         if (isset($this->cache[$key])) {
             $entry = $this->cache[$key];
             if ($entry['expire'] > time()) {
-                echo '[内存]读取到数据' . PHP_EOL;
                 $this->hits++;
                 $entry['access'] = microtime(true);
                 return $entry['value'];
@@ -55,7 +54,6 @@ class MemoryCache implements DataSourceInterface
             unset($this->cache[$key]);
         }
         $this->misses++;
-        echo '[内存]未读取到数据' . PHP_EOL;
         $content = $this->wrapped->get($key);
         if ($content !== null) {
             $this->store($key, $content);

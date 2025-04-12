@@ -52,10 +52,8 @@ class RedisCache implements DataSourceInterface
         try {
             $value = $this->redis->get($key);
             if ($value !== false) {
-                echo '[Redis]读取到数据' . PHP_EOL;
                 return $value;
             }
-            echo '[Redis]未读取到数据' . PHP_EOL;
             $content = $this->wrapped->get($key);
             if ($content !== null) {
                 $this->set($key, $content);
