@@ -1,63 +1,78 @@
 # hejunjie/cache
 
-这是我自己写的一个多层缓存系统，主要是为了在项目里能灵活组合各种缓存层（内存、Redis、文件什么的）。
+<div align="center">
+  <a href="./README.md">English</a>｜<a href="./README.zh-CN.md">简体中文</a>
+  <hr width="50%"/>
+</div>
 
-项目需求比较杂，框架提供的缓存要么不够灵活，要么不够透明，于是就动手造了个轮子，也算是写给自己用的。如果你正好也有类似的需求，希望这个包能帮到你 🙌。
+A layered caching system built with the decorator pattern. Supports combining memory, file, local, and remote caches to improve hit rates and simplify cache logic.
 
-## 特点
+---
 
-- 支持多层缓存组合，套娃式缓存结构，越套越稳
-- 基于装饰器模式，扩展新类型缓存很方便
-- 内存缓存支持命中率统计，便于观察和调优
-- 文件缓存支持并发锁，适合 CLI 场景下的数据缓存
-- 自定义数据源接口，只要实现 `Interfaces\DataSourceInterface` 就能接入
+This is a multi-layer caching system I built myself, mainly to flexibly combine different cache layers (like memory, Redis, and file) in my projects.
 
-## 安装
+The project requirements were quite diverse, and the caching tools provided by frameworks were either too limited or lacked transparency. So, I decided to build my own solution—something tailored to my own needs.
+If you happen to have similar requirements, I hope this package proves useful to you 🙌.
+
+## Features
+
+- Supports multi-layer cache combinations with a nested cache structure, becoming more stable as it goes deeper.
+- Based on the decorator pattern, extending new types of caches is very easy.
+- Memory cache supports hit rate statistics, making it easier to observe and optimize.
+- File cache supports concurrent locks, making it suitable for data caching in CLI scenarios.
+- Custom data source interface—just implement `Interfaces\DataSourceInterface` to integrate any data source.
+
+
+## Installation
+
+Install via Composer:
 
 ```bash
 composer require hejunjie/cache
 ```
 
-## 快速上手
+## Quick Start
 
-**注意**：为了拓展方便，代码仅仅实现了缓存层（内存/redis/文件），实际应用场景中建议自行完善数据层，大概代码如下所示
+**Note**: For ease of extension, the code only implements the cache layer (memory/redis/file). In actual use cases, it is recommended to complete the data layer yourself. The example code is shown below.
 
 ```php
 <?php
 use Hejunjie\Cache;
 
-// 创建一个缓存结构：Memory -> Redis -> File -> 数据库
+// Create a cache structure: Memory -> Redis -> File -> Database
 $cache = new Cache\MemoryCache(
     new Cache\RedisCache(
         new Cache\FileCache(
-            new MyDataSource(), // 实现了 DataSourceInterface 的数据源
-            '[文件]缓存文件夹路径',
-            '[文件]缓存时长(秒)'
+            new MyDataSource(), // A data source that implements the DataSourceInterface.
+            '[File] Cache folder path',
+            '[File] Cache duration (seconds)'
         ),
-        '[redis]配置'
-        '[redis]前缀'
-        '[redis]是否持久化链接'
+        '[Redis] Configuration'
+        '[Redis] Prefix'
+        '[Redis] Persistent connection'
     ),
-    '[内存]缓存时长(秒)',
-    '[内存]缓存数量(防止内存溢出)'
+    '[Memory] Cache duration (seconds)',
+    '[Memory] Cache quantity (to prevent memory overflow)'
 );
 
-$data = $cache->get('user:123'); // 自动逐层查找，缓存 miss 会一路下沉到底层数据源
+$data = $cache->get('user:123'); // Automatically performs a layer-by-layer lookup, with cache misses propagating down to the underlying data source.
 ```
 
-## 自定义数据源
-只要实现下面这个接口，就可以作为缓存的“最终数据来源”使用：
-比如你可以接数据库、API、甚至其他缓存系统都行。
+## Custom Data Sources
+
+As long as you implement the following interface, it can be used as the "final data source" for the cache:
+
+For example, you can connect to a database, an API, or even another caching system.
 
 ```php
 <?php
 
-// 自定义数据源 - 数据库层
+// Custom Data Sources - database
 class MyDataSource implements \Hejunjie\Tools\Cache\Interfaces\DataSourceInterface
 {
     protected DataSourceInterface $wrapped;
     
-    // 构造函数，如果是最后一层则不需要构造函数
+    // Constructor, no need for a constructor if it's the last layer.
     // public function __construct(
     //     DataSourceInterface $wrapped
     // ) {
@@ -66,10 +81,10 @@ class MyDataSource implements \Hejunjie\Tools\Cache\Interfaces\DataSourceInterfa
 
     public function get(string $key): ?string
     {
-        // 根据 key 在数据库中获取对应内容
-        // 返回内容字符串 `string`
+        // Get the corresponding content from the database based on the key.
+        // Return the content as a string string.
 
-        // 如果下一层返回数据，则在当前层存储。如果是最后一层则不需要下列代码
+        // If the next layer returns data, store it in the current layer. If it's the last layer, the following code is not needed.
         // $content = $this->wrapped->get($key);
         // if ($content !== null) {
         //     $this->set($key, $content);
@@ -80,63 +95,58 @@ class MyDataSource implements \Hejunjie\Tools\Cache\Interfaces\DataSourceInterfa
 
     public function set(string $key, string $value): bool
     {
-        // 根据 key 在数据库中存储 value
-        // 返回存储结果 `bool`
+        // Store the value in the database based on the key.
+        // Return the storage result as `bool`.
     }
 
     public function del(string $key, string $value): void
     {
-        // 根据 key 在进行删除操作
-        // 不需要进行返回
+        // Perform a delete operation based on the key.
+        // No need to return any value.
     }
 }
 
 ```
 
-## 用途 & 背景
+## Purpose & Motivation
 
-这个包最初是为了我自己的几个 side project 写的，没想太多通用性，但后面越写越顺手，就整理了一下发出来。
+This package was originally built for a few of my own side projects, so I didn’t focus too much on making it universally applicable at first. But as I kept improving it, things got smoother, so I decided to organize it and share it.
 
-如果你也刚好需要多层缓存，或者对装饰器模式感兴趣，可以试试看。
+If you happen to need multi-layer caching, or you're interested in the decorator pattern, feel free to give it a try.
 
-有啥问题或者建议都欢迎提 issue 或 PR，我会尽量回复。
+If you have any questions or suggestions, feel free to open an issue or submit a PR — I’ll do my best to respond.
 
-## 🔧 更多工具包（可独立使用，也可统一安装）
+## 🔧 Additional Toolkits (Can be used independently or installed together)
 
-本项目最初是从 [hejunjie/tools](https://github.com/zxc7563598/php-tools) 拆分而来，如果你想一次性安装所有功能组件，也可以使用统一包：
+This project was originally extracted from [hejunjie/tools](https://github.com/zxc7563598/php-tools).
+To install all features in one go, feel free to use the all-in-one package:
 
 ```bash
 composer require hejunjie/tools
 ```
 
-当然你也可以按需选择安装以下功能模块：
+Alternatively, feel free to install only the modules you need：
 
-[hejunjie/china-division](https://github.com/zxc7563598/php-china-division) - 中国省市区划分数据包。
+[hejunjie/utils](https://github.com/zxc7563598/php-utils) - A lightweight and practical PHP utility library that offers a collection of commonly used helper functions for files, strings, arrays, and HTTP requests—designed to streamline development and support everyday PHP projects.
 
-[hejunjie/error-log](https://github.com/zxc7563598/php-error-log) - 责任链日志上报系统。
+[hejunjie/cache](https://github.com/zxc7563598/php-cache) - A layered caching system built with the decorator pattern. Supports combining memory, file, local, and remote caches to improve hit rates and simplify cache logic.
 
-[hejunjie/mobile-locator](https://github.com/zxc7563598/php-mobile-locator) - 国内手机号归属地 & 运营商识别。
+[hejunjie/china-division](https://github.com/zxc7563598/php-china-division) - Regularly updated dataset of China's administrative divisions with ID-card address parsing. Distributed via Composer and versioned for use in forms, validation, and address-related features
 
-[hejunjie/utils](https://github.com/zxc7563598/php-utils) - 常用工具方法集合。
+[hejunjie/error-log](https://github.com/zxc7563598/php-error-log) - An error logging component using the Chain of Responsibility pattern. Supports multiple output channels like local files, remote APIs, and console logs—ideal for flexible and scalable logging strategies.
 
-[hejunjie/address-parser](https://github.com/zxc7563598/php-address-parser) - 收货地址智能解析工具，支持从非结构化文本中提取用户/地址信息。
+[hejunjie/mobile-locator](https://github.com/zxc7563598/php-mobile-locator) - A mobile number lookup library based on Chinese carrier rules. Identifies carriers and regions, suitable for registration checks, user profiling, and data archiving.
 
-[hejunjie/url-signer](https://github.com/zxc7563598/php-url-signer) - URL 签名工具，支持对 URL 进行签名和验证。
+[hejunjie/address-parser](https://github.com/zxc7563598/php-address-parser) - An intelligent address parser that extracts name, phone number, ID number, region, and detailed address from unstructured text—perfect for e-commerce, logistics, and CRM systems.
 
-[hejunjie/google-authenticator](https://github.com/zxc7563598/php-google-authenticator) - Google Authenticator 及类似应用的密钥生成、二维码创建和 OTP 验证。
+[hejunjie/url-signer](https://github.com/zxc7563598/php-url-signer) - A PHP library for generating URLs with encryption and signature protection—useful for secure resource access and tamper-proof links.
 
-[hejunjie/simple-rule-engine](https://github.com/zxc7563598/php-simple-rule-engine) - 一个轻量、易用的 PHP 规则引擎，支持多条件组合、动态规则执行。
+[hejunjie/google-authenticator](https://github.com/zxc7563598/php-google-authenticator) - A PHP library for generating and verifying Time-Based One-Time Passwords (TOTP). Compatible with Google Authenticator and similar apps, with features like secret generation, QR code creation, and OTP verification.
 
-👀 所有包都遵循「轻量实用、解放双手」的原则，能单独用，也能组合用，自由度高，欢迎 star 🌟 或提 issue。
+[hejunjie/simple-rule-engine](https://github.com/zxc7563598/php-simple-rule-engine) - A lightweight and flexible PHP rule engine supporting complex conditions and dynamic rule execution—ideal for business logic evaluation and data validation.
+
+👀 All packages follow the principles of being lightweight and practical — designed to save you time and effort. They can be used individually or combined flexibly. Feel free to ⭐ star the project or open an issue anytime!
 
 ---
 
-该库后续将持续更新，添加更多实用功能。欢迎大家提供建议和反馈，我会根据大家的意见实现新的功能，共同提升开发效率。
-
-
-
-
-
-
-
-
+This library will continue to be updated with more practical features. Suggestions and feedback are always welcome — I’ll prioritize new functionality based on community input to help improve development efficiency together.
