@@ -7,6 +7,8 @@
 
 A layered caching system built with the decorator pattern. Supports combining memory, file, local, and remote caches to improve hit rates and simplify cache logic.
 
+**This project has been parsed by Zread. If you need a quick overview of the project, you can click on the number of views to view it：[Understand this project](https://zread.ai/zxc7563598/php-cache)**
+
 ---
 
 This is a multi-layer caching system I built myself, mainly to flexibly combine different cache layers (like memory, Redis, and file) in my projects.
